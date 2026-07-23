@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0B1220;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(41, 211, 192, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(255, 122, 89, 0.06), transparent);
+  color: #EAF0F6;
+}
+
+::selection {
+  background-color: rgba(41, 211, 192, 0.3);
+  color: #EAF0F6;
+}
+
+/* Visible keyboard focus everywhere, per accessibility floor */
+:focus-visible {
+  outline: 2px solid #29D3C0;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #131B2E;
+}
+::-webkit-scrollbar-thumb {
+  background: #26314A;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1D9C90;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
