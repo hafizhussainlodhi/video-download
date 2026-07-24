@@ -1,7 +1,8 @@
 import type { ResolveResponse, HistoryResponse } from './types';
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://184.73.52.160:8000';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://184.73.52.160:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://184-73-52-160.sslip.io';
 
 export async function resolveVideo(url: string): Promise<ResolveResponse> {
   const res = await fetch(`${API_URL}/api/resolve`, {
