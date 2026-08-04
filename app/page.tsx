@@ -6,7 +6,7 @@ import UrlInputForm from '@/components/UrlInputForm';
 import PlatformIcons from '@/components/PlatformIcons';
 import LoadingState from '@/components/LoadingState';
 import SuccessCard from '@/components/SuccessCard';
-import HistoryTable from '@/components/HistoryTable';
+// import HistoryTable from '@/components/HistoryTable';
 import { resolveVideo } from '@/lib/api';
 import type { ResolveResponse } from '@/lib/types';
 
@@ -79,9 +79,9 @@ export default function Home() {
         {viewState === 'success' && result && <SuccessCard data={result} />}
       </div>
 
-      <div className="mt-16 w-full flex justify-center">
+      {/* <div className="mt-16 w-full flex justify-center">
         <HistoryTable refreshKey={historyRefreshKey} />
-      </div>
+      </div> */}
 
       <footer className="mt-10 text-center text-[11px] text-text-faint">
         Only download content you have the right to use. Respect creators and platform terms.

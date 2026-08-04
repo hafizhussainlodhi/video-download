@@ -41,7 +41,7 @@ export default function PlatformIcons({
   onSelect?: (key: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2.5">
+    <div className="grid grid-cols-2 justify-items-center gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
       {PLATFORMS.map(({ key, label, Icon, tint }) => {
         // Auto-detected (from the pasted/resolved link) takes priority visually;
         // a manual click is just a soft hint and never blocks anything.
@@ -53,7 +53,7 @@ export default function PlatformIcons({
             onClick={() => onSelect?.(key)}
             aria-pressed={isActive}
             className={[
-              'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300',
+              'flex w-full items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 sm:w-auto sm:justify-start',
               'cursor-pointer hover:border-signal/40 hover:text-text-primary',
               isActive
                 ? 'border-signal/60 bg-signal/10 shadow-signal scale-105'

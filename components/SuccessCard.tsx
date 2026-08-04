@@ -306,8 +306,8 @@ export default function SuccessCard({
       }
 
       // Poori file mil chuki hai — ab hi actual "save" trigger karte hain.
-      const blob = new Blob(chunks as BlobPart[]);
-      const objectUrl = URL.createObjectURL(blob);
+      const contentType = res.headers.get('Content-Type') || (format.hasVideo ? 'video/mp4' : 'audio/mpeg');
+      const blob = new Blob(chunks as BlobPart[], { type: contentType });
 
       // Filename backend ke Content-Disposition header se lete hain — wahi
       // decide karta hai container mkv hai ya original ext (jaise mp4),
@@ -325,13 +325,44 @@ export default function SuccessCard({
           .trim()
           .slice(0, 80) || 'video'}.${format.formatId.includes('+') ? 'mkv' : format.ext}`;
 
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = safeName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
+      // iOS Safari me `<a download>` blob trick video ko sirf "Files" app me
+      // (ya kabhi naya tab me) daalta hai — Photos/gallery me kabhi nahi
+      // jaata, kyunki iOS webpage ko seedha Camera Roll me likhne ki ijazat
+      // nahi deta. Iska asli tareeqa native share sheet hai, jisme "Save
+      // Video" option Photos me save karta hai. Isliye video formats ke liye
+      // pehle Web Share API try karte hain (sirf iOS jahan file-share support
+      // hoti hai); Android/desktop pe purana anchor-download tareeqa hi
+      // theek se gallery/downloads me ja raha tha, wahi wahan rakha hai.
+      const isIOS =
+        /iP(hone|od|ad)/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const file = new File([blob], safeName, { type: contentType });
+      const canUseShareSheet =
+        format.hasVideo &&
+        isIOS &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [file] });
+
+      if (canUseShareSheet) {
+        try {
+          await navigator.share({ files: [file], title: safeName });
+        } catch (shareErr) {
+          // User ne share sheet cancel kiya to ye error nahi hai, chup rahenge.
+          if ((shareErr as DOMException)?.name !== 'AbortError') {
+            throw shareErr;
+          }
+        }
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = safeName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
+      }
 
       setDownloads((prev) => ({ ...prev, [id]: { status: 'done', progress: 100 } }));
       setTimeout(() => onDownloaded?.(), 400);
@@ -372,7 +403,7 @@ export default function SuccessCard({
             </span>
           </div>
 
-          <div className="mt-2 flex flex-col gap-1.5">
+          <div className="mt-2 flex flex-col gap-2">
             {formats.map((format) => {
               const state = downloads[format.formatId];
               const isBusy = state?.status === 'starting' || state?.status === 'downloading';
@@ -394,9 +425,9 @@ export default function SuccessCard({
               return (
                 <div
                   key={format.formatId}
-                  className="flex items-center justify-between rounded-xl border border-hairline bg-surface-raised/60 px-3 py-2"
+                  className="flex flex-col gap-3 rounded-xl border border-hairline bg-surface-raised/60 p-3 sm:flex-row sm:items-center sm:justify-between sm:px-3 sm:py-2"
                 >
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
                     {format.hasVideo ? (
                       <span className="font-mono font-medium text-text-primary">{format.quality}</span>
                     ) : (
@@ -411,7 +442,7 @@ export default function SuccessCard({
                     onClick={() => handleDownload(format)}
                     disabled={isBusy}
                     className={[
-                      'flex min-w-[7.5rem] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed',
+                      'flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed sm:w-auto sm:min-w-[7.5rem] sm:py-1.5',
                       state?.status === 'error'
                         ? 'bg-danger/15 text-danger hover:bg-danger/25'
                         : state?.status === 'done'
