@@ -103,14 +103,15 @@ export default function SuccessCard({
       const blob = new Blob(chunks as BlobPart[], { type: contentType });
 
       // Safety net: agar connection beech me hi kisi wajah se cut ho jaye
-      // (server timeout, mobile network drop, waghera), to fetch kabhi kabhi
-      // is cut-off ko bhi "successfully complete" samajh sakta hai. Received
-      // bytes ko us approx size se compare karte hain jo list me dikhaya
-      // gaya tha — agar bohot kam mile (<85%), to "Downloaded" ki bajaye
-      // "incomplete/failed" treat karte hain, taake mobile pe corrupt file
-      // save na ho jo baad me chalti hi nahi.
+      // (server timeout, network drop), to fetch kabhi kabhi is cut-off ko
+      // bhi "successfully complete" samajh sakta hai. Received bytes ko us
+      // approx size se compare karte hain — lekin yt-dlp ka size-estimate
+      // khaaskar merged (video+audio) formats ke liye kaafi rough hota hai,
+      // aur mobile networks pe halka variation normal hai. Isliye threshold
+      // kaafi loose rakha hai (50%) taake sirf waqai truncated files hi
+      // pakdi jayen, sahi downloads galti se "failed" na ho jayen.
       const expected = format.filesizeApproxBytes || 0;
-      if (expected > 0 && blob.size < expected * 0.85) {
+      if (expected > 0 && blob.size < expected * 0.5) {
         throw new Error(
           `Incomplete download: got ${(blob.size / 1024 / 1024).toFixed(1)}MB of ~${(expected / 1024 / 1024).toFixed(1)}MB`
         );
@@ -172,7 +173,8 @@ export default function SuccessCard({
       setDownloads((prev) => ({ ...prev, [id]: { status: 'done', progress: 100 } }));
       setTimeout(() => onDownloaded?.(), 400);
       clearAfterDelay(id, 2200);
-    } catch {
+    } catch (err) {
+      console.error('[download] failed:', err);
       setDownloads((prev) => ({ ...prev, [id]: { status: 'error' } }));
       clearAfterDelay(id, 3000);
     }
