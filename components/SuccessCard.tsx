@@ -131,35 +131,49 @@ export default function SuccessCard({
 
       // Mobile browsers me `<a download>` blob trick video ko sirf app ke
       // internal "Files"/"Downloads" folder me daalta hai — Photos/Gallery
-      // app usay kabhi nahi dikhati, kyunki wo sirf Camera/DCIM jesi
-      // specific folders scan karti hai, Downloads nahi. iOS pe to ye bilkul
-      // kaam hi nahi karta (Safari blob download ko naye tab me khol deta
-      // hai ya ignore kar deta hai).
+      // app usay kabhi nahi dikhati. Fix: mobile par phone ka apna native
+      // "Share" sheet use karte hain (usme "Save to Photos" jesa option
+      // hota hai). Desktop pe zaroorat nahi.
       //
-      // Fix: mobile (iOS + Android dono) par video formats ke liye phone ka
-      // apna native "Share" sheet use karte hain — usme "Save to Photos" /
-      // "Save to Gallery" jesa option hota hai jo OS khud provide karta hai,
-      // aur wo asal me Gallery/Photos me file daal deta hai. Desktop pe ye
-      // zaroorat nahi (wahan normal download hi theek kaam karta hai).
+      // IMPORTANT: Share API kuch mobile browsers me buggy/inconsistent hai
+      // (canShare() kabhi exception de deta hai, share() kabhi anjaani
+      // wajah se reject ho jata hai) — pehle yahan koi bhi aisi chhoti si
+      // gadbad poori download ko "Failed" bana deti thi, jabke file humare
+      // pass already poori (blob me) maujood hoti thi. Ab har hissa apne
+      // try/catch me hai: kuch bhi ajeeb ho, hum seedha plain anchor-
+      // download pe fallback kar dete hain, kabhi user ko fake "Failed"
+      // nahi dikhate jab tak file waqai adhoori na ho.
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       const file = new File([blob], safeName, { type: contentType });
-      const canUseShareSheet =
-        format.hasVideo &&
-        isMobile &&
-        typeof navigator.share === 'function' &&
-        typeof navigator.canShare === 'function' &&
-        navigator.canShare({ files: [file] });
 
+      let canUseShareSheet = false;
+      try {
+        canUseShareSheet =
+          format.hasVideo &&
+          isMobile &&
+          typeof navigator.share === 'function' &&
+          typeof navigator.canShare === 'function' &&
+          navigator.canShare({ files: [file] });
+      } catch {
+        canUseShareSheet = false;
+      }
+
+      let savedViaShare = false;
       if (canUseShareSheet) {
         try {
           await navigator.share({ files: [file], title: safeName });
+          savedViaShare = true;
         } catch (shareErr) {
-          // User ne share sheet cancel kiya to ye error nahi hai, chup rahenge.
-          if ((shareErr as DOMException)?.name !== 'AbortError') {
-            throw shareErr;
+          // User ne share sheet cancel kiya to ye genuinely "already handled"
+          // hai — dobara download trigger karne ki zaroorat nahi. Kisi aur
+          // wajah se fail ho to neeche plain download pe fallback karenge.
+          if ((shareErr as DOMException)?.name === 'AbortError') {
+            savedViaShare = true;
           }
         }
-      } else {
+      }
+
+      if (!savedViaShare) {
         const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = objectUrl;
